@@ -4,6 +4,7 @@ import { User } from './modules/users/entities/user.entity';
 import { Role } from './modules/users/entities/role.entity';
 import { UserRole } from './modules/users/entities/user-role.entity';
 import { UserToken } from './modules/users/user-token.entity';
+import { UserSettings } from './modules/users/entities/user-settings.entity';
 
 import { Claim } from './modules/claims/entities/claim.entity';
 import { ClaimStatus } from './modules/claims/entities/claim-status.entity';
@@ -24,6 +25,7 @@ export const databaseConfig = (): TypeOrmModuleOptions => ({
         Role,
         UserRole,
         UserToken,
+        UserSettings,
         Claim,
         ClaimStatus,
         ClaimStatusHistory,

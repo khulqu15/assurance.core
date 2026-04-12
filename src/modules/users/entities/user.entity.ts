@@ -3,10 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserRole } from './user-role.entity';
+import { UserSettings } from './user-settings.entity';
 
 @Entity('users')
 export class User {
@@ -126,4 +128,7 @@ export class User {
     type: 'timestamptz',
   })
   updatedAt!: Date;
+
+  @OneToOne(() => UserSettings, (settings) => settings.user)
+  settings!: UserSettings;
 }

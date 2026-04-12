@@ -139,10 +139,20 @@ export class ClaimsService {
             where: { id },
             relations: ['user', 'currentStatus'],
         });
-
         if (!claim) throw new NotFoundException('Claim not found');
-        if (claim.user.id !== actorId) throw new ForbiddenException('You can only delete your own claim');
-        if (claim.currentStatus.code !== ClaimStatusCode.DRAFT) throw new BadRequestException('Only draft claims can be deleted');
+        const actor = await this.userRepository.findOne({
+            where: { id: actorId },
+            relations: ['userRoles', 'userRoles.role'],
+        });
+        if (!actor) throw new NotFoundException('Actor not found');
+
+        const isSuperadmin = actor.userRoles?.some(
+            (userRole) => userRole.role.code === 'superadmin',
+        );
+        if (!isSuperadmin) {
+            if (claim.user.id !== actorId) throw new ForbiddenException('You can only delete your own claim');
+            if (claim.currentStatus.code !== ClaimStatusCode.DRAFT) throw new BadRequestException('Only draft claims can be deleted');
+        }
         await this.claimRepository.softRemove(claim);
         return { message: 'Claim deleted successfully' };
     }
