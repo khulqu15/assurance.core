@@ -1,4 +1,3 @@
-
 # Insurance Approval System API
 
 A production-oriented backend service for managing insurance claims, review workflow, approval decisions, user administration, email notifications, and regulated document attachments.
