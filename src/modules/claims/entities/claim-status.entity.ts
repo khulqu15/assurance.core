@@ -1,8 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('claim_statuses')
 export class ClaimStatus {
-    @PrimaryGeneratedColumn({ type: 'smallint' })
+    @PrimaryColumn({ type: 'smallint' })
     id!: number;
 
     @Column({ length: 50, unique: true })
