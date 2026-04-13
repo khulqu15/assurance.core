@@ -1,16 +1,19 @@
-import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { RoleCode } from '../../../common/enums/role.enum';
 
 export class UpdateUserDto {
+  @IsOptional()
   @IsString()
-  fullName!: string;
+  fullName?: string;
 
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(8)
-  password!: string;
+  password?: string;
 
   @IsOptional()
   @IsIn([
@@ -20,6 +23,10 @@ export class UpdateUserDto {
     RoleCode.SUPERADMIN,
   ])
   role?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 
   @IsOptional()
   @IsString()
