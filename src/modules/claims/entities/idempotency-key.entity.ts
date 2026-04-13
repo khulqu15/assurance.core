@@ -37,6 +37,6 @@ export class IdempotencyKey {
     @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;
 
-    @Column({ name: 'expired_at', type: 'timestamptz' })
+    @Column({ name: 'expired_at', type: 'datetime' })
     expiredAt!: Date;
 }

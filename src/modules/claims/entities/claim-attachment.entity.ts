@@ -72,7 +72,7 @@ export class ClaimAttachment {
 
     @CreateDateColumn({
         name: 'created_at',
-        type: 'timestamptz',
+        type: 'datetime',
     })
     createdAt!: Date;
 }

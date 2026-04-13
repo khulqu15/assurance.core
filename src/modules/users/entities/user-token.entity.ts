@@ -40,13 +40,13 @@ export class UserToken {
 
     @Column({
         name: 'expires_at',
-        type: 'timestamptz',
+        type: 'datetime',
     })
     expiresAt!: Date;
 
     @CreateDateColumn({
         name: 'created_at',
-        type: 'timestamptz',
+        type: 'datetime',
     })
     createdAt!: Date;
 }

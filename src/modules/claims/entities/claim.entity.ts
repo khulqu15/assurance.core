@@ -46,13 +46,13 @@ export class Claim {
     @JoinColumn({ name: 'current_status_id' })
     currentStatus!: ClaimStatus;
 
-    @Column({ name: 'submitted_at', type: 'timestamptz', nullable: true })
+    @Column({ name: 'submitted_at', type: 'datetime', nullable: true })
     submittedAt?: Date | null;
 
-    @Column({ name: 'reviewed_at', type: 'timestamptz', nullable: true })
+    @Column({ name: 'reviewed_at', type: 'datetime', nullable: true })
     reviewedAt?: Date | null;
 
-    @Column({ name: 'decided_at', type: 'timestamptz', nullable: true })
+    @Column({ name: 'decided_at', type: 'datetime', nullable: true })
     decidedAt?: Date | null;
 
     @ManyToOne(() => User, { eager: true, nullable: true, onDelete: 'RESTRICT' })

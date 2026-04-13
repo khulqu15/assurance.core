@@ -102,7 +102,7 @@ export class User {
 
   @Column({
     name: 'email_verified_at',
-    type: 'timestamptz',
+    type: 'datetime',
     nullable: true,
   })
   emailVerifiedAt?: Date | null;
@@ -119,13 +119,13 @@ export class User {
 
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamptz',
+    type: 'datetime',
   })
   createdAt!: Date;
 
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamptz',
+    type: 'datetime',
   })
   updatedAt!: Date;
 
