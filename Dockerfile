@@ -1,26 +1,15 @@
-# ---------- Builder ----------
-FROM node:20-alpine AS builder
+# Use the Node official image
+# https://hub.docker.com/_/node
+FROM node:lts
 
+# Create and change to the app directory.
 WORKDIR /app
 
-COPY package*.json ./
+# Copy local code to the container image
+COPY . ./
+
+# Install packages
 RUN npm ci
 
-COPY . .
-RUN npm run build
-
-# ---------- Runner ----------
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-ENV NODE_ENV=production
-
-COPY package*.json ./
-RUN npm ci --omit=dev
-
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src/database/migrations ./dist/database/migrations
-
-EXPOSE 3000
-
-CMD ["sh", "-c", "npx typeorm -d dist/database/data-source.js migration:run && node dist/main.js"]
+# Serve the app
+CMD ["npm", "run", "start:prod"]
