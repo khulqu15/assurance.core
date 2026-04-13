@@ -9,11 +9,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json ./
-
 RUN npm install --no-package-lock
 
 COPY . .
-
 RUN npm run build
 
 
@@ -31,15 +29,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json ./
-
 RUN npm install --omit=dev --no-package-lock
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 
-COPY --from=builder /app/src ./src
-
+RUN chmod +x ./docker-entrypoint.sh
 RUN mkdir -p /data/uploads
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+CMD ["./docker-entrypoint.sh"]

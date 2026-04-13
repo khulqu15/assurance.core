@@ -25,6 +25,7 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "seed:run": "ts-node src/data-seed.ts run",
+    "seed:run:prod": "node dist/data-seed.js run",
     "seed:reset": "ts-node src/data-seed.ts reset",
     "seed:restart": "ts-node src/data-seed.ts restart",
     "seed:revert": "ts-node src/data-seed.ts revert"
