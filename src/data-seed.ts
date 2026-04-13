@@ -1,11 +1,13 @@
 import 'dotenv/config';
 import { DataSource, In } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { join } from 'path';
 
 import { User } from './modules/users/entities/user.entity';
 import { Role } from './modules/users/entities/role.entity';
 import { UserRole } from './modules/users/entities/user-role.entity';
 import { UserToken } from './modules/users/entities/user-token.entity';
+import { UserSettings } from './modules/users/entities/user-settings.entity';
 
 import { Claim } from './modules/claims/entities/claim.entity';
 import { ClaimStatus } from './modules/claims/entities/claim-status.entity';
@@ -17,18 +19,27 @@ import { IdempotencyKey } from './modules/claims/entities/idempotency-key.entity
 import { RoleCode } from './common/enums/role.enum';
 import { ClaimStatusCode } from './common/enums/claim-status.enum';
 
+const resolveSqlitePath = () => {
+  if (process.env.SQLITE_PATH) {
+    return process.env.SQLITE_PATH;
+  }
+
+  if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+    return join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'database.sqlite');
+  }
+
+  return join(process.cwd(), 'data', 'database.sqlite');
+};
+
 const dataSource = new DataSource({
-  type: 'postgres',
-  host: process.env.DB_HOST ?? 'localhost',
-  port: Number(process.env.DB_PORT ?? 5432),
-  username: process.env.DB_USERNAME ?? 'postgres',
-  password: process.env.DB_PASSWORD ?? 'postgres',
-  database: process.env.DB_NAME ?? 'insurance_approval',
+  type: 'better-sqlite3',
+  database: resolveSqlitePath(),
   entities: [
     User,
     Role,
     UserRole,
     UserToken,
+    UserSettings,
     Claim,
     ClaimStatus,
     ClaimStatusHistory,
@@ -67,10 +78,10 @@ async function ensureMasterData() {
   const statusRepo = dataSource.getRepository(ClaimStatus);
 
   const roleSeeds = [
-    { code: RoleCode.USER, name: 'User' },
-    { code: RoleCode.VERIFIER, name: 'Verifier' },
-    { code: RoleCode.APPROVER, name: 'Approver' },
-    { code: RoleCode.SUPERADMIN, name: 'Super Admin' },
+    { id: 1, code: RoleCode.USER, name: 'User' },
+    { id: 2, code: RoleCode.VERIFIER, name: 'Verifier' },
+    { id: 3, code: RoleCode.APPROVER, name: 'Approver' },
+    { id: 4, code: RoleCode.SUPERADMIN, name: 'Super Admin' },
   ];
 
   for (const item of roleSeeds) {
@@ -81,11 +92,11 @@ async function ensureMasterData() {
   }
 
   const statusSeeds = [
-    { code: ClaimStatusCode.DRAFT, name: 'Draft', sequence: 1 },
-    { code: ClaimStatusCode.SUBMITTED, name: 'Submitted', sequence: 2 },
-    { code: ClaimStatusCode.REVIEWED, name: 'Reviewed', sequence: 3 },
-    { code: ClaimStatusCode.APPROVED, name: 'Approved', sequence: 4 },
-    { code: ClaimStatusCode.REJECTED, name: 'Rejected', sequence: 4 },
+    { id: 1, code: ClaimStatusCode.DRAFT, name: 'Draft', sequence: 1 },
+    { id: 2, code: ClaimStatusCode.SUBMITTED, name: 'Submitted', sequence: 2 },
+    { id: 3, code: ClaimStatusCode.REVIEWED, name: 'Reviewed', sequence: 3 },
+    { id: 4, code: ClaimStatusCode.APPROVED, name: 'Approved', sequence: 4 },
+    { id: 5, code: ClaimStatusCode.REJECTED, name: 'Rejected', sequence: 5 },
   ];
 
   for (const item of statusSeeds) {
@@ -93,6 +104,35 @@ async function ensureMasterData() {
     if (!exists) {
       await statusRepo.save(statusRepo.create(item));
     }
+  }
+}
+
+async function ensureUserSettings(user: User) {
+  const settingsRepo = dataSource.getRepository(UserSettings);
+
+  const exists = await settingsRepo.findOne({
+    where: { user: { id: user.id } },
+  });
+
+  if (!exists) {
+    await settingsRepo.save(
+      settingsRepo.create({
+        user,
+        emailNotification: true,
+        pushNotification: false,
+        claimStatusNotification: true,
+        approvalDecisionNotification: true,
+        weeklySummary: true,
+        theme: 'light',
+        language: 'en',
+        defaultPage: 'dashboard',
+        rowsPerPage: 25,
+        rememberSession: true,
+        twoFactorAuth: false,
+        loginAlert: true,
+        autoLogout: true,
+      }),
+    );
   }
 }
 
@@ -227,6 +267,7 @@ async function runSeed() {
       );
     }
 
+    await ensureUserSettings(user);
     createdUsers.push(user);
   }
 
@@ -386,6 +427,7 @@ async function resetSeed() {
   const idempotencyRepo = dataSource.getRepository(IdempotencyKey);
   const userRoleRepo = dataSource.getRepository(UserRole);
   const userTokenRepo = dataSource.getRepository(UserToken);
+  const userSettingsRepo = dataSource.getRepository(UserSettings);
 
   const users = await userRepo.find({
     where: { email: In(SEEDED_USER_EMAILS) },
@@ -403,14 +445,15 @@ async function resetSeed() {
     await historyRepo.delete({ claim: { id: In(claimIds) } as any });
     await attachmentRepo.delete({ claim: { id: In(claimIds) } as any });
     await commentRepo.delete({ claim: { id: In(claimIds) } as any });
-    await claimRepo.delete({ id: In(claimIds) });
+    await claimRepo.delete({ id: In(claimIds) as any });
   }
 
   if (userIds.length > 0) {
     await idempotencyRepo.delete({ actor: { id: In(userIds) } as any });
     await userTokenRepo.delete({ user: { id: In(userIds) } as any });
+    await userSettingsRepo.delete({ user: { id: In(userIds) } as any });
     await userRoleRepo.delete({ user: { id: In(userIds) } as any });
-    await userRepo.delete({ id: In(userIds) });
+    await userRepo.delete({ id: In(userIds) as any });
   }
 
   console.log('🗑️ Seed reset completed');
