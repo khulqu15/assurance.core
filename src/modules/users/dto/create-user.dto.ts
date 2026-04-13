@@ -1,4 +1,4 @@
-import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { RoleCode } from '../../../common/enums/role.enum';
 
 export class CreateUserByAdminDto {
@@ -20,6 +20,10 @@ export class CreateUserByAdminDto {
     RoleCode.SUPERADMIN,
   ])
   role?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 
   @IsOptional()
   @IsString()
