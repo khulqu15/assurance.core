@@ -28,7 +28,7 @@ export class UserToken {
     @Column({ name: 'is_used', default: false })
     isUsed!: boolean;
 
-    @Column({ name: 'expires_at', type: 'timestamptz' })
+    @Column({ name: 'expires_at', type: 'datetime' })
     expiresAt!: Date;
 
     @CreateDateColumn({ name: 'created_at' })
