@@ -17,13 +17,21 @@ import { IdempotencyKey } from '../modules/claims/entities/idempotency-key.entit
 
 const isTs = __filename.endsWith('.ts');
 
+const resolveSqlitePath = () => {
+  if (process.env.SQLITE_PATH) {
+    return process.env.SQLITE_PATH;
+  }
+
+  if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+    return join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'data.sqlite');
+  }
+
+  return join(process.cwd(), 'data', 'data.sqlite');
+};
+
 export default new DataSource({
-  type: 'postgres',
-  host: process.env.DB_HOST ?? 'localhost',
-  port: Number(process.env.DB_PORT ?? 5432),
-  username: process.env.DB_USERNAME ?? 'postgres',
-  password: process.env.DB_PASSWORD ?? 'postgres',
-  database: process.env.DB_NAME ?? 'insurance_approval',
+  type: 'better-sqlite3',
+  database: resolveSqlitePath(),
   entities: [
     User,
     Role,
@@ -44,4 +52,6 @@ export default new DataSource({
   ],
   synchronize: false,
   logging: false,
+  timeout: 5000,
+  enableWAL: true,
 });
