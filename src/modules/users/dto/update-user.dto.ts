@@ -1,47 +1,55 @@
-import { IsBoolean, IsEmail, IsOptional, IsString } from "class-validator";
+import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { RoleCode } from '../../../common/enums/role.enum';
 
 export class UpdateUserDto {
-    @IsOptional()
-    @IsString()
-    fullName?: string;
+  @IsString()
+  fullName!: string;
 
-    @IsOptional()
-    @IsEmail()
-    email?: string;
+  @IsEmail()
+  email!: string;
 
-    @IsOptional()
-    @IsBoolean()
-    isActive?: boolean;
+  @IsString()
+  @MinLength(8)
+  password!: string;
 
-    @IsOptional()
-    @IsString()
-    phoneNumber?: string;
+  @IsOptional()
+  @IsIn([
+    RoleCode.USER,
+    RoleCode.VERIFIER,
+    RoleCode.APPROVER,
+    RoleCode.SUPERADMIN,
+  ])
+  role?: string;
 
-    @IsOptional()
-    @IsString()
-    nik?: string;
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
 
-    @IsOptional()
-    @IsString()
-    birthPlace?: string;
+  @IsOptional()
+  @IsString()
+  nik?: string;
 
-    @IsOptional()
-    @IsString()
-    birthDate?: string;
+  @IsOptional()
+  @IsString()
+  birthPlace?: string;
 
-    @IsOptional()
-    @IsString()
-    address?: string;
+  @IsOptional()
+  @IsString()
+  birthDate?: string;
 
-    @IsOptional()
-    @IsString()
-    city?: string;
+  @IsOptional()
+  @IsString()
+  address?: string;
 
-    @IsOptional()
-    @IsString()
-    province?: string;
+  @IsOptional()
+  @IsString()
+  city?: string;
 
-    @IsOptional()
-    @IsString()
-    postalCode?: string;
+  @IsOptional()
+  @IsString()
+  province?: string;
+
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
 }
