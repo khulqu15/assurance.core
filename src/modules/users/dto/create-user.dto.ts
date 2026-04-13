@@ -1,7 +1,7 @@
 import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { RoleCode } from '../../../common/enums/role.enum';
 
-export class CreateUserDto {
+export class CreateUserByAdminDto {
   @IsString()
   fullName!: string;
 
