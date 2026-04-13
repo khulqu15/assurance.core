@@ -1,12 +1,9 @@
 node_modules
 dist
-.history
-coverage
 .git
 .gitignore
 Dockerfile
-README.md
+package-lock.json
 npm-debug.log
 .env
-.env.*
-uploads
+coverage
