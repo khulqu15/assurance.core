@@ -244,58 +244,60 @@ export class ClaimsService {
     }
 
     private async transitionClaim(params: {
-        claimId: string;
-        actorId: string;
-        expectedRole: RoleCode;
-        expectedStatusCode: ClaimStatusCode;
-        nextStatusCode: ClaimStatusCode;
-        note?: string;
-        rejectionReason?: string;
-        ownerOnly?: boolean;
+        claimId: string
+        actorId: string
+        expectedRole: RoleCode
+        expectedStatusCode: ClaimStatusCode
+        nextStatusCode: ClaimStatusCode
+        note?: string
+        rejectionReason?: string
+        ownerOnly?: boolean
     }) {
-        const actor = await this.getUserOrFail(params.actorId);
-        await this.ensureUserHasRole(actor.id, params.expectedRole);
+        const actor = await this.getUserOrFail(params.actorId)
+        await this.ensureUserHasRole(actor.id, params.expectedRole)
 
         return this.dataSource.transaction(async (manager) => {
-            const claimRepo = manager.getRepository(Claim);
-            const statusRepo = manager.getRepository(ClaimStatus);
-            const historyRepo = manager.getRepository(ClaimStatusHistory);
-            const lockedClaim = await claimRepo
-                .createQueryBuilder('claim')
-                .where('claim.id = :id', { id: params.claimId })
-                .andWhere('claim.deleted_at IS NULL')
-                .setLock('pessimistic_write')
-                .getOne();
+            const claimRepo = manager.getRepository(Claim)
+            const statusRepo = manager.getRepository(ClaimStatus)
+            const historyRepo = manager.getRepository(ClaimStatusHistory)
 
-            if (!lockedClaim) throw new NotFoundException('Claim not found');
             const claim = await claimRepo.findOne({
-                where: { id: lockedClaim.id },
+                where: { id: params.claimId },
                 relations: ['user', 'currentStatus', 'reviewedBy', 'decidedBy'],
-            });
+                withDeleted: false,
+            })
 
-            if (!claim) throw new NotFoundException('Claim not found');
-            if (params.ownerOnly && claim.user.id !== params.actorId) throw new ForbiddenException('You can only perform this action on your own claim');
-            if (claim.currentStatus.code !== params.expectedStatusCode) {
-                throw new BadRequestException(`Invalid transition from ${claim.currentStatus.code} to ${params.nextStatusCode}`);
-            }
-            const nextStatus = await statusRepo.findOne({where: { code: params.nextStatusCode }});
+            if (!claim) throw new NotFoundException('Claim not found')
 
-            if (!nextStatus) throw new NotFoundException(`Status ${params.nextStatusCode} not found`);
-            const fromStatus = claim.currentStatus;
-            claim.currentStatus = nextStatus;
+            if (params.ownerOnly && claim.user.id !== params.actorId) throw new ForbiddenException('You can only perform this action on your own claim')
 
-            if (params.nextStatusCode === ClaimStatusCode.SUBMITTED) claim.submittedAt = new Date();
+            if (claim.currentStatus.code !== params.expectedStatusCode) throw new BadRequestException(`Invalid transition from ${claim.currentStatus.code} to ${params.nextStatusCode}`,)
+
+            const nextStatus = await statusRepo.findOne({
+                where: { code: params.nextStatusCode },
+            })
+
+            if (!nextStatus) throw new NotFoundException(`Status ${params.nextStatusCode} not found`)
+
+            const fromStatus = claim.currentStatus
+            claim.currentStatus = nextStatus
+
+            if (params.nextStatusCode === ClaimStatusCode.SUBMITTED) claim.submittedAt = new Date()
+
             if (params.nextStatusCode === ClaimStatusCode.REVIEWED) {
-                claim.reviewedAt = new Date();
-                claim.reviewedBy = actor;
+                claim.reviewedAt = new Date()
+                claim.reviewedBy = actor
             }
 
-            if (params.nextStatusCode === ClaimStatusCode.APPROVED || params.nextStatusCode === ClaimStatusCode.REJECTED) {
-                claim.decidedAt = new Date();
-                claim.decidedBy = actor;
+            if ( params.nextStatusCode === ClaimStatusCode.APPROVED || params.nextStatusCode === ClaimStatusCode.REJECTED ) {
+                claim.decidedAt = new Date()
+                claim.decidedBy = actor
             }
-            if (params.nextStatusCode === ClaimStatusCode.REJECTED) claim.rejectionReason = params.rejectionReason ?? null;
-            const savedClaim = await claimRepo.save(claim);
+
+            if (params.nextStatusCode === ClaimStatusCode.REJECTED) claim.rejectionReason = params.rejectionReason ?? null
+
+            const savedClaim = await claimRepo.save(claim)
+
             const history = historyRepo.create({
                 claim: savedClaim,
                 fromStatus,
@@ -303,7 +305,9 @@ export class ClaimsService {
                 actionBy: actor,
                 actionRole: params.expectedRole,
                 note: params.note ?? null,
-            });
+            })
+
+            await historyRepo.save(history)
 
             await this.emailService.sendClaimStatusNotification({
                 to: savedClaim.user.email,
@@ -311,13 +315,11 @@ export class ClaimsService {
                 claimNumber: savedClaim.claimNumber,
                 status: nextStatus.code,
                 note: params.note ?? null,
-            });
+            })
 
-            await historyRepo.save(history);
-
-            return savedClaim;
-        });
-    }
+            return savedClaim
+        })
+    }   
 
     private async createHistory(params: {
         claim: Claim;
