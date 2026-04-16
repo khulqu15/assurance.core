@@ -256,7 +256,18 @@ export class ClaimsService {
         const actor = await this.getUserOrFail(params.actorId)
         await this.ensureUserHasRole(actor.id, params.expectedRole)
 
-        return this.dataSource.transaction(async (manager) => {
+        let resultClaim: Claim | null = null
+        let emailPayload:
+            | {
+                to: string
+                fullName: string
+                claimNumber: string
+                status: string
+                note: string | null
+            }
+            | null = null
+
+        await this.dataSource.transaction(async (manager) => {
             const claimRepo = manager.getRepository(Claim)
             const statusRepo = manager.getRepository(ClaimStatus)
             const historyRepo = manager.getRepository(ClaimStatusHistory)
@@ -289,7 +300,7 @@ export class ClaimsService {
                 claim.reviewedBy = actor
             }
 
-            if ( params.nextStatusCode === ClaimStatusCode.APPROVED || params.nextStatusCode === ClaimStatusCode.REJECTED ) {
+            if (params.nextStatusCode === ClaimStatusCode.APPROVED || params.nextStatusCode === ClaimStatusCode.REJECTED) {
                 claim.decidedAt = new Date()
                 claim.decidedBy = actor
             }
@@ -309,17 +320,36 @@ export class ClaimsService {
 
             await historyRepo.save(history)
 
-            await this.emailService.sendClaimStatusNotification({
-                to: savedClaim.user.email,
-                fullName: savedClaim.user.fullName,
-                claimNumber: savedClaim.claimNumber,
-                status: nextStatus.code,
-                note: params.note ?? null,
+            resultClaim = await claimRepo.findOne({
+                where: { id: savedClaim.id },
+                relations: ['user', 'currentStatus', 'reviewedBy', 'decidedBy'],
+                withDeleted: false,
             })
 
-            return savedClaim
+            if (!resultClaim) throw new NotFoundException('Claim not found after update')
+
+            emailPayload = {
+                to: resultClaim.user.email,
+                fullName: resultClaim.user.fullName,
+                claimNumber: resultClaim.claimNumber,
+                status: nextStatus.code,
+                note: params.note ?? null,
+            }
         })
-    }   
+
+        if (emailPayload) {
+            try {
+                await this.emailService.sendClaimStatusNotification(emailPayload)
+            } catch (error) {
+                console.error('Failed to send claim status notification:', error)
+            }
+        }
+
+        return {
+            message: `Claim ${params.nextStatusCode.toLowerCase()} successfully`,
+            claim: resultClaim,
+        }
+    }
 
     private async createHistory(params: {
         claim: Claim;
